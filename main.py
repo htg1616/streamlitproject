@@ -32,16 +32,24 @@ with st_graph:
         ax1.plot(data.index, data['Close'], label=ticker)
         ax1.set_title(f'{ticker} 종가 추이')
         ax1.set_xlabel('날짜')
-        ax1.set_ylabel = ('종가')
+        ax1.set_ylabel('가격')
         ax1.legend()
         st.pyplot(fig1)
 
+        one_date = st.date_input(label='언제 주가를 알려줄까?', value=start_date, min_value=start_date, max_value=end_date)
+        st.caption('사이드바에서 입력한 시작 날짜와 종료 날짜 사이 값으로 입력해주세요')
+        if start_date <= one_date <= end_date:
+            day = pd.to_datetime(one_date)
+            if day in data.index:
+                st.write(data.loc[day])
+            else:
+                st.write('휴장일 날짜이거나, 당시 없던 종목입니다.')
     else:
         st.error("데이터가 없거나 입력 정보가 잘못되었습니다. 다시 확인해주세요.")
 
 with st_compare:
     compare_tickers = st.text_input('비교할 ETF 또는 주식의 종목코드를 입력하세요', 'QQQ' if ticker == 'SPY' else 'SPY').split()
-    fig2, (ax2, ax3) = plt.subplots(2, 1)
+    fig2, (ax2, ax3) = plt.subplots(2, 1, sharex=True)
     ax2.plot(data.index, data['Close'], label=ticker)
     data_initialClose = data['Close'][0]
     data['relative_Close'] = data['Close']/data_initialClose
