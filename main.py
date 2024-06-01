@@ -3,6 +3,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import yfinance as yf
 from ing_theme_matplotlib import mpl_style
+
+#matplotlib 스타일 설정
 mpl_style(dark=True)
 
 # 한글 폰트 설정
@@ -39,12 +41,23 @@ with st_graph:
 
 with st_compare:
     compare_tickers = st.text_input('비교할 ETF 또는 주식의 종목코드를 입력하세요', 'QQQ' if ticker == 'SPY' else 'SPY').split()
-    fig2, (ax2, ax3) = plt.subplots(2, 1)  # 새로운 figure 생성
+    fig2, (ax2, ax3) = plt.subplots(2, 1)
     ax2.plot(data.index, data['Close'], label=ticker)
+    data_initialClose = data['Close'][0]
+    data['relative_Close'] = data['Close']/data_initialClose
+    ax3.plot(data.index, data['relative_Close'], label=ticker)
+
     for compare_ticker in compare_tickers:
         compare_data = yf.download(compare_ticker, start=start_date, end=end_date)
+        compare_data_initilClose = compare_data['Close'][0]
+        compare_data['relative_Close'] = compare_data['Close']/compare_data_initilClose
         ax2.plot(compare_data.index, compare_data['Close'], label=compare_ticker)
+        ax3.plot(compare_data.index, compare_data['relative_Close'], label=compare_ticker)
+
     ax2.legend()
+    ax3.legend()
+
+    st.pyplot(fig2)
 
     plt.title(f'{ticker} 대 {", ".join(compare_tickers)} 종가 비교')
 
