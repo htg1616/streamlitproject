@@ -37,6 +37,7 @@ def graph():
 
     with st_graph_col2:
         one_date = st.date_input(label='언제 주가를 알려줄까?', value=start, min_value=start, max_value=end)
+        one_date = pd.to_datetime(one_date)
         st.caption('사이드바에서 입력한 시작 날짜와 종료 날짜 사이 값으로 입력해주세요')
         if start <= one_date <= end:
             if one_date in data.index:
