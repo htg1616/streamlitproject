@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import yfinance as yf
 from ing_theme_matplotlib import mpl_style
+from PIL import Image
 
 #matplotlib 스타일 설정
 mpl_style(dark=True)
@@ -11,6 +12,34 @@ mpl_style(dark=True)
 plt.rcParams['font.family'] = 'Malgun Gothic'
 plt.rcParams['axes.unicode_minus'] = False
 
+def page_home():
+    st.title('ETF 투자')
+    st.subheader('내가 대구과학고에서 성공할 수 있었던 이유')
+    img = Image.open('image.jpg')
+    st.image(img)
+    st.divider()
+    st.markdown('**수석 재무관리사 황태균**')
+    st.markdown(':trophy: 서울 사이버대학 경영학과 수석 :trophy:')
+    st.markdown(':trophy: 2020 리만 브라더스 배 경영대회 1등 :trophy:')
+    st.markdown(':trophy: 2020~2023 지점 챔피언 :trophy:')
+    st.markdown('200만원을 벌려면 적성에 직업을 맞추고')
+    st.markdown('2000만원을 벌려면 직업에 적성을 맞추어라')
+    st.markdown(':telephone_receiver: 무료자산관리 상담신청 및 채용문의')
+    st.markdown('010-0000-0000')
+    st.divider()
+    st.markdown(':star: 돈 관리와 지식이 없는분')
+    st.markdown(':star: 스스로 시작하지 못하는 분')
+    st.markdown(':star: 수입 지출 균형이 맞지 않는분')
+    st.markdown(':fire: 여러분도 저와 ETF 투자와 함께라면 연봉 5억 가능합니다')
+    st.markdown(':fire: 함께 배우고 함께 참여하세요.')
+    st.divider()
+    kakao = Image.open('kakao.jpg')
+    st.image(kakao)
+    st.write('''힘들어도 이 일을 놓지 못하는 이유 \n
+그만두기엔 좋은 분들을 너무 많이 만났고 \n
+이제 내가 없으면 안될 분들이 \n 
+여럿계시다는게 한해살이 풀 같은 영업환경에도 \n
+열심히 뛰게 만드는 이유''')
 
 def get_startend():
     col1, col2 = st.columns(2)
@@ -20,7 +49,7 @@ def get_startend():
     end = pd.to_datetime(end)
     return (start, end)
 
-def graph():
+def page_graph():
     ticker = st.text_input('주식 종목을 입력하세요', value='SPY')
     start, end = get_startend()
     data = yf.download(ticker, start=start, end=end)
@@ -61,7 +90,7 @@ def remove_ticker_portfolio(ticker):
     else:
         st.error("종목을 선택해주세요.")
 
-def portfolio():
+def page_portfolio():
     with st.form("portfolio_form"):
         if not 'portfolio_temp' in st.session_state:
             st.session_state['portfolio_temp'] = {}
@@ -124,7 +153,7 @@ def get_portfolio_weighted_price(portfolio, start, end):
 
     return portfolio_data
 
-def compare():
+def page_compare():
     tickers = st.text_input(f'비교할 ETF 또는 주식의 종목코드를 입력하세요', 'SPY').split()
     start, end = get_startend()
 
@@ -147,9 +176,13 @@ def compare():
     fig.tight_layout()
     st.pyplot(fig)
 
-def backtest():
+def page_backtest():
     start, end = get_startend()
-    pt_or_stock = st.radio('선택하세요', ['포토폴리오', '단일종목'])
+    if 'portfolio' in st.session_state:
+        pt_or_stock = st.radio('선택하세요', ['포토폴리오', '단일종목'])
+    else:
+        pt_or_stock = '단일종목'
+        st.warning('포토폴리오 백테스트를 원하면 포토폴리오를 추가해주세요')
     if 'portfolio' in st.session_state and pt_or_stock == '포토폴리오':
         seleced_portfolio = st.selectbox('포토폴리오를 선택하세요', list(st.session_state['portfolio'].keys()))
         data = get_portfolio_weighted_price(st.session_state['portfolio'][seleced_portfolio], start, end)
@@ -162,8 +195,7 @@ def backtest():
     investment_select = st.radio('투자 방법을 선택하세요', ('일회성 투자', '적금형 투자'))
     st.divider()
 
-    if investment_select:
-        col1, col2 = st.columns(2, gap='medium')
+    col1, col2 = st.columns(2, gap='medium')
 
     if investment_select == '일회성 투자':
         start_money = col1.number_input('투자할 금액을 입력하세요', value=1000, step=5, placeholder='만원 단위로 입력하세요')
@@ -208,15 +240,16 @@ def backtest():
 #사이드바 구성
 with st.sidebar:
     st.title('ETF 투자 도우미')
-    st.radio('페이지', ['주가 그래프','비교', '포토폴리오' ,'백테스트'], index=None, key='page')
+    page = st.radio('페이지', ['홈', '주가 그래프','비교', '포토폴리오' ,'백테스트'], index=None)
     st.divider()
 
-page = st.session_state['page']
-if page == '주가 그래프':
-    graph()
+if page == '홈':
+    page_home()
+elif page == '주가 그래프':
+    page_graph()
 elif page == '포토폴리오':
-    portfolio()
+    page_portfolio()
 elif page == '비교':
-    compare()
+    page_compare()
 elif page == '백테스트':
-    backtest()
+    page_backtest()
