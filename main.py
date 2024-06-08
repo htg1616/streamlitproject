@@ -13,8 +13,9 @@ plt.rcParams['axes.unicode_minus'] = False
 
 
 def get_startend():
-    start = st.date_input('시작 날자: ', value=pd.to_datetime("2010-01-01"))
-    end = st.date_input('종료 날자: ', value=pd.to_datetime("2024-01-01"))
+    col1, col2 = st.columns(2)
+    start = col1.date_input('시작 날자: ', value=pd.to_datetime("2010-01-01"))
+    end = col2.date_input('종료 날자: ', value=pd.to_datetime("2024-01-01"))
     start = pd.to_datetime(start)
     end = pd.to_datetime(end)
     return (start, end)
