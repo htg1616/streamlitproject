@@ -198,4 +198,96 @@ def page_compare():
         data = yf.download(ticker, start=start, end=end)
         # 주어진 날짜 이후의 가장 가까운 거래일 찾기
         idx_after = data.index.searchsorted(start, side='left')
-        initialClose
+        initialClose = data['Close'][idx_after]
+        data['relative_Close'] = data['Close'] / initialClose
+        ax1.plot(data.index, data['Close'], label=ticker)
+        ax2.plot(data.index, data['relative_Close'], label=ticker)
+
+    ax1.legend()
+    ax2.legend()
+    ax1.set_title(f'{", ".join(tickers)} 종가 비교')
+    ax2.set_title(f'{", ".join(tickers)} 종가 추이 비교')
+
+    fig.tight_layout()
+    st.pyplot(fig)
+
+def page_backtest():
+    """
+    포트폴리오 또는 단일 종목에 대한 백테스트를 수행하는 페이지를 렌더링함.
+    투자 방법을 선택하고, 일회성 투자 또는 적금형 투자의 결과를 계산하여 표시함.
+    """
+    start, end = get_startend()
+    if 'portfolio' in st.session_state:
+        pt_or_stock = st.radio('선택하세요', ['포토폴리오', '단일종목'])
+    else:
+        pt_or_stock = '단일종목'
+        st.warning('포토폴리오 백테스트를 원하면 포토폴리오를 추가해주세요')
+    if 'portfolio' in st.session_state and pt_or_stock == '포토폴리오':
+        seleced_portfolio = st.selectbox('포토폴리오를 선택하세요', list(st.session_state['portfolio'].keys()))
+        data = get_portfolio_weighted_price(st.session_state['portfolio'][seleced_portfolio], start, end)
+
+    elif pt_or_stock == '단일종목':
+        ticker = st.text_input('주식 종목을 입력하세요', value='SPY')
+        data = yf.download(ticker, start=start, end=end)
+
+    investment_select = st.radio('투자 방법을 선택하세요', ('일회성 투자', '적금형 투자'))
+    st.divider()
+
+    col1, col2 = st.columns(2, gap='medium')
+
+    if investment_select == '일회성 투자':
+        start_money = col1.number_input('투자할 금액을 입력하세요', value=1000, step=5, placeholder='만원 단위로 입력하세요')
+        if start_money:
+            end_money = round(start_money * data['Close'].iloc[-1] / data['Close'].iloc[0])
+            col2.markdown(f"## 최종 금액: {end_money} 원")
+
+    elif investment_select == '적금형 투자':
+        month_money = col1.number_input('매월 투자할 금액을 입력하세요', value=100, step=10, placeholder='만원 단위로 입력하세요')
+        if month_money:
+            # 월별 투자 금액 계산
+            monthly_investments = pd.DataFrame(index=pd.date_range(start=start, end=end, freq='MS')) # MS는 월 시작 주기임
+            monthly_investments['Investment'] = month_money
+            monthly_investments['Total Investment'] = monthly_investments['Investment'].cumsum()
+
+            # 월별 총 주식 수 계산
+            monthly_investments['Close'] = data['Close'].reindex(monthly_investments.index, method='ffill')  # 결측값 채우기
+            monthly_investments['Units'] = monthly_investments['Investment'] / monthly_investments['Close']
+            monthly_investments['Total Units'] = monthly_investments['Units'].cumsum()
+
+            # 월별 총 금액, 수익률 계산
+            monthly_investments['Total Value'] = monthly_investments['Total Units'] * monthly_investments['Close']
+            monthly_investments['Total ROI'] = (monthly_investments['Total Value'] / monthly_investments['Total Investment'] - 1) * 100
+
+            final_value = round(monthly_investments['Total Value'].iloc[-1])
+            final_investment = round(monthly_investments['Total Investment'].iloc[-1])
+            final_ROI = monthly_investments['Total ROI'].iloc[-1]
+
+            col2.write(f"투자 기간 : {len(monthly_investments)}월")
+            col2.write(f"최종 금액 : {final_value} 만원")
+            col2.write(f"총 투자 금액 : {final_investment} 만원")
+            col2.write(f"수익률 : {final_ROI:.2f}%")
+
+            # 수익 그래프
+            fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True)
+            ax1.plot(monthly_investments['Total ROI'], label='ROI')
+            ax2.plot(monthly_investments['Total Value'], label='Value')
+            ax2.plot(monthly_investments['Total Investment'], label='Investment')
+            ax2.legend()
+            st.pyplot(fig)
+
+# 사이드바 구성
+with st.sidebar:
+    st.title('ETF 투자 도우미')
+    page = st.radio('페이지', ['홈', '주가 그래프','비교', '포토폴리오' ,'백테스트'], index=None)
+    st.divider()
+
+if page == '홈':
+    page_home()
+elif page == '주가 그래프':
+    page_graph()
+elif page == '포토폴리오':
+    page_portfolio()
+elif page == '비교':
+    page_compare()
+elif page == '백테스트':
+    page_backtest()
